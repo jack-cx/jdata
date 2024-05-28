@@ -8,6 +8,7 @@ https://data.eastmoney.com/tfpxx/
 
 import pandas as pd
 import requests
+from typing import List
 
 SCRAP_PAGE_SIZE = 25
 
@@ -80,15 +81,19 @@ def stock_tfp_em(date: str = "20240426") -> pd.DataFrame:
     ).dt.date
     return big_df
 
-def sse_tpf(date: str) -> pd.DataFrame:
-    """
+def sse_tpf(date_begin: str, date_end: str) -> pd.DataFrame:
+    """_summary_
     上证交易所停复牌信息
     https://www.sse.com.cn/disclosure/dealinstruc/suspension/
-    :param date: specific date as "2020-03-19"
-    :type date: str
-    :return: 停复牌信息表
-    :rtype: pandas.DataFrame
+
+    Args:
+        date_begin (str): 起始时间  
+        date_end (str): 截止时间
+
+    Returns:
+        pd.DataFrame: 返回停牌数据
     """
+
     url = "https://query.sse.com.cn/sseQuery/commonQuery.do"
     headers = {
         "Host": "query.sse.com.cn",
@@ -104,27 +109,72 @@ def sse_tpf(date: str) -> pd.DataFrame:
         "isPagination": "true",
         "sqlId": "COMMON_SSE_XXPL_JYTS_TFPXX_L",
         "SEARCH_DATE": date,
-        "pageHelp.pageSize": SCRAP_PAGE_SIZE,
+        "pageHelp.pageSize": 1,
         "pageHelp.pageNo": _begin,
         "pageHelp.beginPage": _begin,
         "pageHelp.cacheSize": 1, 
         "pageHelp.endPage": _begin,
         "_": "1716875453016"
     }
+    data_ret = []
+    try:
+        r = requests.get(url, params=parms, headers=headers)
+        data = r.json()
+        total_cnt = data['pageHelp']['total']
+        left = total_cnt
+        _begin = 1
+        while (left > 0):
+            page_size = SCRAP_PAGE_SIZE if left >= SCRAP_PAGE_SIZE else left
+            parms.update({"pageHelp.pageSize": page_size})
+            r = requests.get(url, params=parms, headers=headers)
+            data = r.json()
+            _tfp_data = data['result']
+            data_ret.extend(_tfp_data)
+            _begin = _begin + 1
+            parms.update({
+                "pageHelp.pageNo": _begin,
+                "pageHelp.beginPage": _begin,
+                "pageHelp.endPage": _begin,
+            })
+            left = left - page_size
+            
+    except Exception as e:
+        return None
+    
+    return data_ret
 
-    r = requests.get(url, params=parms, headers=headers)
+def szse_tpf(date_begin: str, date_end: str) -> List:
+    """
+    深交所停复牌信息
+    https://www.szse.cn/disclosure/memo/index.html
+    Args:
+        date_begin (str): 起始时间
+        date_end (str): 截止时间
 
+    Returns:
+        List: _description_
+    """
+    return 
 
+def bse_tpf(date_begin: str, date_end: str) -> List:
+    return
 
-def stock_tfp(date: str) -> pd.DataFrame:
+def stock_tfp_detail(date_begin: str, date_end: str) -> pd.DataFrame:
     """
     沪深北交易所停复牌信息
-    :param date: specific date as "2020-03-19"
+    :param date_begin date_end: specific date as "2020-03-19" or "20200319"
     :type date: str
     :return: 停复牌信息表
     :rtype: pandas.DataFrame
     """
 
+    _data_sse = sse_tpf(date_begin)
+
+    return _data_sse
+
 if __name__ == "__main__":
     stock_tfp_em_df = stock_tfp_em(date="20240426")
     print(stock_tfp_em_df)
+
+    tfp_sse = stock_tfp_detail(date="2024-05-28")
+    print(tfp_sse)
