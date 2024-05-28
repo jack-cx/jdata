@@ -104,17 +104,36 @@ def sse_tpf(date: str) -> pd.DataFrame:
         "isPagination": "true",
         "sqlId": "COMMON_SSE_XXPL_JYTS_TFPXX_L",
         "SEARCH_DATE": date,
-        "pageHelp.pageSize": SCRAP_PAGE_SIZE,
+        "pageHelp.pageSize": 1,
         "pageHelp.pageNo": _begin,
         "pageHelp.beginPage": _begin,
         "pageHelp.cacheSize": 1, 
         "pageHelp.endPage": _begin,
         "_": "1716875453016"
     }
-
-    r = requests.get(url, params=parms, headers=headers)
-
-
+    try:
+        r = requests.get(url, params=parms, headers=headers)
+        total_cnt = data['pageHelp']['total']
+        left = total_cnt
+        _begin = 1
+        while (left > 0):
+            page_size = SCRAP_PAGE_SIZE if left >= SCRAP_PAGE_SIZE else left
+            parms.update({"pageHelp.pageSize": page_size})
+            r = requests.get(url, params=parms, headers=headers)
+            data = r.json()
+            _tfp_data = data['result']
+            _begin = _begin + 1
+            parms.update({
+                "pageHelp.pageNo": _begin,
+                "pageHelp.beginPage": _begin,
+                "pageHelp.endPage": _begin,
+            })
+            _tfp_data
+            
+    except Exception as e:
+        return None
+    
+    return 
 
 def stock_tfp(date: str) -> pd.DataFrame:
     """
