@@ -175,7 +175,7 @@ def szse_tpf(date_begin: str, date_end: str) -> List:
 
     _date_begin = _str2date(date_begin)
     _date_end = _str2date(date_end)
-
+    data_ret = []
     parms = {
         "SHOWTYPE": "JSON",
         "CATALOGID": "1798",
@@ -185,15 +185,59 @@ def szse_tpf(date_begin: str, date_end: str) -> List:
         "txtKsrq-txtZzrq": _date_end.strftime("%Y-%m-%d"),
         "random": random()
     }
-    r = requests.request(url, params=parms, headers=header)
-    page_count = r['metadata']['pagecount']
-    record_count = r['metadata']['recordcount']
-    
+    r = requests.get(url, params=parms, headers=header)
+    data_json = r.json()[0]
+    page_count = data_json['metadata']['pagecount']
+    data_ret.extend(data_json['data'])
+    current_page = 2
+    while(current_page < page_count):
+        parms.update({
+            "PAGENO": current_page,
+            "random": random()
+        })
+        r = requests.get(url, params=parms, headers=header)
+        data_json = r.json()[0]
+        data_ret.extend(data_json['data'])
+        current_page += 1
 
-    return 
+    return data_ret
 
 def bse_tpf(date_begin: str, date_end: str) -> List:
-    return
+    """
+    北交所停复牌信息
+    https://www.bse.cn/disclosure/tradingtips.html
+    Args:
+        date_begin (str): 起始时间
+        date_end (str): 截止时间
+
+    Returns:
+        List: _description_
+    """
+    url = "https://www.bse.cn/tradingtipsController/tradingtipsExPage.do?callback=jQuery331_1716992187118"
+    header = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    }
+    payload = {
+        "xxfcbj[]": 2,
+        "label[]": 0,
+        "label[]": 2,
+        "typecode[]": "0600",
+        "typecode[]": "0700",
+        "typecode[]": "9001",
+        "publishDate": date_begin,
+        "startTime": date_begin,
+        "endTime": date_end,
+        "page": 0,
+        "needPublishDate": True,
+        "isInit": 0,
+        "sortfield": "publish_date"
+    }
+
+    r = requests.post(url, data=payload, headers=header)
+    data = r.text
+
+
+    return data
 
 def stock_tfp_detail(date_begin: str, date_end: str) -> pd.DataFrame:
     """
@@ -209,8 +253,11 @@ def stock_tfp_detail(date_begin: str, date_end: str) -> pd.DataFrame:
     return _data_sse
 
 if __name__ == "__main__":
-    stock_tfp_em_df = stock_tfp_em(date="20240426")
-    print(stock_tfp_em_df)
+    # stock_tfp_em_df = stock_tfp_em(date="20240426")
+    # print(stock_tfp_em_df)
 
-    tfp_sse = stock_tfp_detail(date="2024-05-28")
-    print(tfp_sse)
+    #tfp_sse = szse_tpf(date_begin="2024-05-02", date_end="2024-05-28")
+    #print(tfp_sse)
+
+    tfp_bse = bse_tpf("", "")
+    print(tfp_bse)
