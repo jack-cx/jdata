@@ -124,7 +124,7 @@ def sse_tpf(date_begin: str, date_end: str) -> List:
             "pageHelp.pageSize": 1,
             "pageHelp.pageNo": _begin,
             "pageHelp.beginPage": _begin,
-            "pageHelp.cacheSize": 1, 
+            "pageHelp.cacheSizstock_tfp_em_dfe": 1, 
             "pageHelp.endPage": _begin,
             "_": "1716875453016"
         }
@@ -239,7 +239,7 @@ def bse_tpf(date_begin: str, date_end: str) -> List:
 
     return data
 
-def stock_tfp_detail(date_begin: str, date_end: str) -> pd.DataFrame:
+def stock_tfp_se(date_begin: str, date_end: str) -> pd.DataFrame:
     """
     沪深北交易所停复牌信息
     :param date_begin date_end: specific date as "2020-03-19" or "20200319"
@@ -247,14 +247,25 @@ def stock_tfp_detail(date_begin: str, date_end: str) -> pd.DataFrame:
     :return: 停复牌信息表
     :rtype: pandas.DataFrame
     """
+    tfp_data = pd.DataFrame()
+    tfp_data.columns = [
+        "序号",
+        "代码",
+        "名称",
+        "停牌时间",
+        "停牌截止时间",
+        "停牌期限",
+        "停牌原因",
+        "所属市场",
+        "预计复牌时间",
+    ]
+    
 
-    _data_sse = sse_tpf(date_begin)
-
-    return _data_sse
+    return 
 
 if __name__ == "__main__":
-    # stock_tfp_em_df = stock_tfp_em(date="20240426")
-    # print(stock_tfp_em_df)
+    stock_tfp_em_df = stock_tfp_em(date="20240426")
+    print(stock_tfp_em_df)
 
     #tfp_sse = szse_tpf(date_begin="2024-05-02", date_end="2024-05-28")
     #print(tfp_sse)
