@@ -7,7 +7,7 @@ https://data.eastmoney.com/tfpxx/
 """
 
 import pandas as pd
-import requests
+import requests, json, time
 from random import random
 from datetime import datetime, timedelta
 from typing import List
@@ -74,13 +74,13 @@ def stock_tfp_em(date: str = "20240426") -> pd.DataFrame:
             "预计复牌时间",
         ]
     ]
-    big_df["停牌时间"] = pd.to_datetime(big_df["停牌时间"], errors="coerce").dt.date
+    big_df["停牌时间"] = pd.to_datetime(big_df["停牌时间"], errors="coerce")
     big_df["停牌截止时间"] = pd.to_datetime(
         big_df["停牌截止时间"], errors="coerce"
-    ).dt.date
+    )
     big_df["预计复牌时间"] = pd.to_datetime(
         big_df["预计复牌时间"], errors="coerce"
-    ).dt.date
+    )
     return big_df
 
 def _str2date(date_str: str) -> datetime:
@@ -213,10 +213,15 @@ def bse_tpf(date_begin: str, date_end: str) -> List:
     Returns:
         List: _description_
     """
-    url = "https://www.bse.cn/tradingtipsController/tradingtipsExPage.do?callback=jQuery331_1716992187118"
+    _prefix = "jQuery331_{}".format(int(time.time()))
+    url = "https://www.bse.cn/tradingtipsController/tradingtipsExPage.do?callback={}".format(_prefix)
     header = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
     }
+
+    _date_begin = _str2date(date_begin)
+    _date_end = _str2date(date_end)
+    _pageIndex = 0
     payload = {
         "xxfcbj[]": 2,
         "label[]": 0,
@@ -224,20 +229,26 @@ def bse_tpf(date_begin: str, date_end: str) -> List:
         "typecode[]": "0600",
         "typecode[]": "0700",
         "typecode[]": "9001",
-        "publishDate": date_begin,
-        "startTime": date_begin,
-        "endTime": date_end,
-        "page": 0,
-        "needPublishDate": True,
+        "companycode": "",
+        "publishDate": _date_begin.strftime("%Y-%m-%d"),
+        "startTime": _date_begin.strftime("%Y-%m-%d"),
+        "endTime": _date_end.strftime("%Y-%m-%d"),
+        "page": _pageIndex,
+        "needPublishDate": "true",
         "isInit": 0,
-        "sortfield": "publish_date"
+        "sortfield": "publish_date",
+        "sorttype": "desc"
     }
 
     r = requests.post(url, data=payload, headers=header)
-    data = r.text
+    _raw = r.text
+    _raw = "{{\"{0}}}".format(_raw[:-1].replace('(', '":', 1).replace('\'', '"'))
+    data_json = json.loads(_raw)
+    tfp_data = data_json[_prefix][0][0]
+    if tfp_data['totaltotalPages']
 
 
-    return data
+    return tfp_data
 
 def stock_tfp_se(date_begin: str, date_end: str) -> pd.DataFrame:
     """
@@ -259,7 +270,6 @@ def stock_tfp_se(date_begin: str, date_end: str) -> pd.DataFrame:
         "所属市场",
         "预计复牌时间",
     ]
-    
 
     return 
 
@@ -270,5 +280,5 @@ if __name__ == "__main__":
     #tfp_sse = szse_tpf(date_begin="2024-05-02", date_end="2024-05-28")
     #print(tfp_sse)
 
-    tfp_bse = bse_tpf("", "")
+    tfp_bse = bse_tpf("2024-01-02", "2024-06-03")
     print(tfp_bse)
